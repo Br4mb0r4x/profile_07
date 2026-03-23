@@ -4,15 +4,26 @@ require 'db.php';
 // vytvoření tabulky
 $db->exec("CREATE TABLE IF NOT EXISTS interests (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT
+    name TEXT UNIQUE
 )");
 
 /* ===== CREATE ===== */
 if (isset($_POST['add'])) {
-    $stmt = $db->prepare("INSERT INTO interests (name) VALUES (?)");
-    $stmt->execute([$_POST['name']]);
+    $name = trim($_POST['name']);
 
-    header("Location: ?page=interests");
+    // kontrola existence
+    $stmt = $db->prepare("SELECT COUNT(*) FROM interests WHERE name = ?");
+    $stmt->execute([$name]);
+
+    if ($stmt->fetchColumn() > 0) {
+        header("Location: ?page=interests&msg=exists");
+        exit;
+    }
+
+    $stmt = $db->prepare("INSERT INTO interests (name) VALUES (?)");
+    $stmt->execute([$name]);
+
+    header("Location: ?page=interests&msg=added");
     exit;
 }
 
@@ -21,16 +32,38 @@ if (isset($_GET['delete'])) {
     $stmt = $db->prepare("DELETE FROM interests WHERE id = ?");
     $stmt->execute([$_GET['delete']]);
 
-    header("Location: ?page=interests");
+    header("Location: ?page=interests&msg=deleted");
     exit;
 }
 
 /* ===== UPDATE ===== */
 if (isset($_POST['update'])) {
-    $stmt = $db->prepare("UPDATE interests SET name = ? WHERE id = ?");
-    $stmt->execute([$_POST['name'], $_POST['id']]);
+    $name = trim($_POST['name']);
+    $id = $_POST['id'];
 
-    header("Location: ?page=interests");
+    // zjisti původní hodnotu
+    $stmt = $db->prepare("SELECT name FROM interests WHERE id = ?");
+    $stmt->execute([$id]);
+    $original = $stmt->fetchColumn();
+
+    if ($original === $name) {
+        header("Location: ?page=interests&msg=nochange");
+        exit;
+    }
+
+    // kontrola duplicity
+    $stmt = $db->prepare("SELECT COUNT(*) FROM interests WHERE name = ? AND id != ?");
+    $stmt->execute([$name, $id]);
+
+    if ($stmt->fetchColumn() > 0) {
+        header("Location: ?page=interests&msg=exists");
+        exit;
+    }
+
+    $stmt = $db->prepare("UPDATE interests SET name = ? WHERE id = ?");
+    $stmt->execute([$name, $id]);
+
+    header("Location: ?page=interests&msg=updated");
     exit;
 }
 
@@ -54,6 +87,31 @@ $interests = $db->query("SELECT * FROM interests")->fetchAll(PDO::FETCH_ASSOC);
     <a href="?page=skills">Skills</a>
 </nav>
 
+<!-- 🔔 HLÁŠKY -->
+<?php if (isset($_GET['msg'])): ?>
+    <p class="msg">
+        <?php
+        switch ($_GET['msg']) {
+            case 'added':
+                echo "Zájem byl úspěšně přidán.";
+                break;
+            case 'deleted':
+                echo "Zájem byl smazán.";
+                break;
+            case 'updated':
+                echo "Zájem byl upraven.";
+                break;
+            case 'exists':
+                echo "Tento zájem již existuje.";
+                break;
+            case 'nochange':
+                echo "Nic nebylo změněno.";
+                break;
+        }
+        ?>
+    </p>
+<?php endif; ?>
+
 <!-- FORM -->
 <form method="POST">
     <input type="text" name="name" 
@@ -75,8 +133,10 @@ $interests = $db->query("SELECT * FROM interests")->fetchAll(PDO::FETCH_ASSOC);
     <?php foreach ($interests as $i): ?>
         <li>
             <?= htmlspecialchars($i['name']) ?>
-            <a href="?page=interests&edit=<?= $i['id'] ?>">✏️</a>
-            <a href="?page=interests&delete=<?= $i['id'] ?>">❌</a>
+            <span>
+                <a href="?page=interests&edit=<?= $i['id'] ?>">✏️</a>
+                <a href="?page=interests&delete=<?= $i['id'] ?>">❌</a>
+            </span>
         </li>
     <?php endforeach; ?>
 </ul>

@@ -1,3 +1,4 @@
+<link rel="stylesheet" href="style.css">
 <h1>Dovednosti</h1>
 
 <nav>
@@ -7,7 +8,7 @@
 </nav>
 
 <ul>
-    <li>HTML</li>
-    <li>CSS</li>
-    <li>PHP</li>
+    <li>Hry</li>
+    <li>C#</li>
+    <li>matika</li>
 </ul>

@@ -1,3 +1,4 @@
+<link rel="stylesheet" href="style.css">
 <h1>404 - Stránka nenalezena</h1>
 
 <nav>
