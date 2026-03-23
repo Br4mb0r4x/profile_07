@@ -78,7 +78,7 @@ if (isset($_GET['edit'])) {
 /* ===== LOAD DATA ===== */
 $interests = $db->query("SELECT * FROM interests")->fetchAll(PDO::FETCH_ASSOC);
 ?>
-
+<link rel="stylesheet" href="style.css">
 <h1>Zájmy</h1>
 
 <nav>
